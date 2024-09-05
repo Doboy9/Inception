@@ -1,12 +1,22 @@
 #!/bin/bash
 
+if [ ! -d "/var/lib/mysql/mysql" ]; then
+    echo "Initializing MariaDB data directory..."
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql
+else
+    echo "MariaDB data directory already exists!"
+fi
 
+# Start MariaDB in the background
+mysqld_safe --datadir=/var/lib/mysql &
 
-mysql_install_db --user=mysql --datadir=/var/lib/mysql
-
-
-mysql -u root -p <<EOF
+# Wait for MariaDB to be ready
+until mysqladmin ping >/dev/null 2>&1; do
+    echo -n "."; sleep 1
+done
+mariadbd --user=mysql --bootstrap <<EOF
 USE mysql;
+FLUSH PRIVILEGES;
 
 DROP USER IF EXISTS ''@'localhost';
 DROP DATABASE IF EXISTS test;
@@ -18,4 +28,4 @@ ALTER USER 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EOF
 
-service mysql start
+exec mysqld_safe --datadir=/var/lib/mysql

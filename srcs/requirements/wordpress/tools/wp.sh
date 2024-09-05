@@ -1,11 +1,20 @@
-sleep 5
+#!/bin/bash
+
+sleep 10
 
 cd /var/www/html
+
+if [ -f wp-config.php ]; then
+    echo "Removing existing WordPress files..."
+    rm -rf wp-admin wp-content wp-includes wp-config.php
+fi
 
 if [ ! -f /usr/local/bin/wp ]; then
     curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
     chmod +x wp-cli.phar
 fi
+
+mkdir -p /run/php
 
 ./wp-cli.phar core download --allow-root
 ./wp-cli.phar config create --dbname=$WORDPRESS_DATABASE --dbuser=$WORDPRESS_DB_USER --dbpass=$WORDPRESS_DB_PWD --dbhost=mariadb --allow-root

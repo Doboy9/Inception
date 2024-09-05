@@ -1,67 +1,57 @@
 services:
   mariadb:
-    container_name: mariadb # Le nom du container, oui vraiment.
-    env_file: .env # le fichier d'environnement pour transmettre les variables
-    networks:
-      - inception # à quel network il appartient
-    build:
-      context: requirements/mariadb # ou se trouve son Dockerfile
-      dockerfile: Dockerfile # le nom du Dockerfile ?!
+    build: requirements/mariadb
+    container_name: mariadb
+    env_file:
+      - ../secrets/.db_password.txt
+      - ../secrets/.db_root_password.txt
+      - .env
     volumes:
-      # Voir plus bas
-      - mariadb:/var/lib/mysql
-    restart: unless-stopped # redémarre tant qu'il n'est pas stoppé 
-    expose:
-      # le port à exposer
-      - "3306"
-
-  nginx:
-    container_name: nginx
-    env_file: .env
-    volumes:
-      - wordpress:/var/www/html
+      - database:/var/lib/mysql
     networks:
       - inception
+
+  nginx:
+    build: requirements/nginx
+    container_name: nginx
     depends_on:
       - wordpress
       - mariadb
-    build:
-      context: requirements/nginx
-      dockerfile: Dockerfile
     ports:
       - "443:443"
-    restart: on-failure
-
-  wordpress:
-    container_name: wordpress
     env_file: .env
     volumes:
-      - wordpress:/var/www/html
+      - webwordpress:/var/www/html
     networks:
       - inception
-    build:
-      context: requirements/wordpress
-      dockerfile: Dockerfile
+
+  wordpress:
+    build: requirements/wordpress
+    container_name: wp-php
+    env_file:
+      - ../secrets/.db_password.txt
+      - ../secrets/.db_root_password.txt
+      - .env
     depends_on:
       - mariadb
-    restart: on-failure
-    ports:
-      - "9000:9000"
+    volumes:
+      - webwordpress:/var/www/html
+    networks:
+      - inception
 
 volumes:
-  wordpress:
+  database:
     driver: local
     driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: /home/dboire/data/wordpress
-  mariadb:
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
+      type: none
+      o: bind
       device: /home/dboire/data/mysql
+  webwordpress:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /home/dboire/data/webwordpress
 
 networks:
   inception:
-    driver: bridge

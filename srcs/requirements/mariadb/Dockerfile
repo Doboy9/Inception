@@ -9,4 +9,4 @@ COPY tools/mariadb.sh .
 
 RUN mkdir /run/mysqld && chmod +x mariadb.sh
 
-CMD ["mariadb.sh"]
+CMD ["./mariadb.sh"]
