@@ -1,0 +1,21 @@
+#!/bin/bash
+
+
+
+mysql_install_db --user=mysql --datadir=/var/lib/mysql
+
+
+mysql -u root -p <<EOF
+USE mysql;
+
+DROP USER IF EXISTS ''@'localhost';
+DROP DATABASE IF EXISTS test;
+
+CREATE DATABASE IF NOT EXISTS $WORDPRESS_DATABASE;
+CREATE USER IF NOT EXISTS '$WORDPRESS_DB_USER'@'%' IDENTIFIED BY '$WORDPRESS_DB_PWD';
+GRANT ALL PRIVILEGES ON $WORDPRESS_DATABASE.* TO '$WORDPRESS_DB_USER'@'%';
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD';
+FLUSH PRIVILEGES;
+EOF
+
+service mysql start
