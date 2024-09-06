@@ -1,31 +1,32 @@
 #!/bin/bash
 
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-    echo "Initializing MariaDB data directory..."
-    mysql_install_db --user=mysql --datadir=/var/lib/mysql
-else
-    echo "MariaDB data directory already exists!"
-fi
+# Vérifie que toutes les variables d'environnement nécessaires sont définies
+if [[ -z "$WORDPRESS_DATABASE" ]]; then echo "Erreur : WP_DATABASE n'est pas défini."; exit 1; fi
+if [[ -z "$WORDPRESS_DB_USER" ]]; then echo "Erreur : WP_DB_USER n'est pas défini."; exit 1; fi
+if [[ -z "$WORDPRESS_DB_PWD" ]]; then echo "Erreur : WORDPRESS_DB_PWD n'est pas défini."; exit 1; fi
+if [[ -z "$MARIADB_ROOT_PASSWORD" ]]; then echo "Erreur : MARIADB_ROOT_PASSWORD n'est pas défini."; exit 1; fi
 
-# Start MariaDB in the background
-mysqld_safe --datadir=/var/lib/mysql &
+# Initialise le répertoire de données MariaDB
+mysql_install_db --user=mysql --datadir=/var/lib/mysql
 
-# Wait for MariaDB to be ready
-until mysqladmin ping >/dev/null 2>&1; do
-    echo -n "."; sleep 1
-done
+# Démarre MariaDB en mode bootstrap
 mariadbd --user=mysql --bootstrap <<EOF
 USE mysql;
 FLUSH PRIVILEGES;
 
+# Supprimez l'utilisateur et la base de données par défaut
 DROP USER IF EXISTS ''@'localhost';
 DROP DATABASE IF EXISTS test;
 
+# Créez la base de données WordPress et l'utilisateur
 CREATE DATABASE IF NOT EXISTS $WORDPRESS_DATABASE;
 CREATE USER IF NOT EXISTS '$WORDPRESS_DB_USER'@'%' IDENTIFIED BY '$WORDPRESS_DB_PWD';
 GRANT ALL PRIVILEGES ON $WORDPRESS_DATABASE.* TO '$WORDPRESS_DB_USER'@'%';
+
+# Changez le mot de passe de l'utilisateur root
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$MARIADB_ROOT_PASSWORD';
 FLUSH PRIVILEGES;
 EOF
 
-exec mysqld_safe --datadir=/var/lib/mysql
+# Exécute MariaDB
+exec mariadbd

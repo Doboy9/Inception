@@ -3,9 +3,9 @@ services:
     build: requirements/mariadb
     container_name: mariadb
     env_file:
+      - .env
       - ../secrets/.db_password.txt
       - ../secrets/.db_root_password.txt
-      - .env
     volumes:
       - database:/var/lib/mysql
     networks:
@@ -38,6 +38,8 @@ services:
       - webwordpress:/var/www/html
     networks:
       - inception
+    ports:
+      - "8080:80"
 
 volumes:
   database:
@@ -55,3 +57,4 @@ volumes:
 
 networks:
   inception:
+    driver: bridge
